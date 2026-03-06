@@ -33,17 +33,32 @@ const RegisterPage = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-    // Mock register logic
-    if (formData.username && formData.password) {
-      navigate('/login');
-    } else {
+    if (!formData.username || !formData.password || !formData.fullName) {
       setError('Please fill all required fields.');
+      return;
+    }
+
+    try {
+      const { api } = await import('../../api/client');
+      // email and phoneNumber are optional in the backend, but we'll send them if filled
+      await api.post('/auth/register', {
+        username: formData.username,
+        password: formData.password,
+        fullName: formData.fullName,
+        email: formData.email || null,
+        phoneNumber: formData.phoneNumber || null
+      }, false);
+      
+      // On successful registration, redirect to login
+      navigate('/login');
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.');
     }
   };
 

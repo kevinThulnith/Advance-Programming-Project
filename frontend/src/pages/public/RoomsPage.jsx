@@ -1,20 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import Button from '../../components/common/Button';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-
-// Mock data for development
-const MOCK_ROOMS = [
-  { id: 1, type: 'Deluxe', name: 'Ocean View Deluxe', price: 300, maxOccupancy: 3, floor: 5, imageUrl: 'https://images.unsplash.com/photo-1582719478250-c894e4dc240e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', description: 'Experience unhindered views of the ocean in this spacious deluxe room.', available: true },
-  { id: 2, type: 'Suite', name: 'Luxury Suite', price: 200, maxOccupancy: 2, floor: 4, imageUrl: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', description: 'A perfect sanctuary for couples, featuring a king-sized bed and lounge area.', available: true },
-  { id: 3, type: 'Penthouse', name: 'Ocean Penthouse', price: 500, maxOccupancy: 4, floor: 8, imageUrl: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', description: 'The pinnacle of luxury. Covering the entire top floor with a private infinite pool.', available: true },
-  { id: 4, type: 'Double', name: 'Coral Double', price: 120, maxOccupancy: 2, floor: 2, imageUrl: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', description: 'Comfortable double room looking out onto lush coral gardens.', available: true },
-  { id: 5, type: 'Single', name: 'Cozy Single', price: 80, maxOccupancy: 1, floor: 1, imageUrl: 'https://images.unsplash.com/photo-1598928506311-c55dd5805448?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', description: 'Perfect for solo travelers wanting an affordable slice of paradise.', available: true },
-  { id: 6, type: 'Suite', name: 'Sunset Suite', price: 220, maxOccupancy: 2, floor: 6, imageUrl: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', description: 'Premium suite situated perfectly to catch the brilliant Maldivian sunset.', available: true }
-];
+import { api } from '../../api/client';
 
 const ROOM_TYPES = ['ALL', 'SINGLE', 'DOUBLE', 'SUITE', 'DELUXE', 'PENTHOUSE'];
 
@@ -24,12 +15,52 @@ const RoomsPage = () => {
   const [startDate, endDate] = dateRange;
   const [occupancy, setOccupancy] = useState(1);
   const [priceMax, setPriceMax] = useState(600);
+  
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Filtering Logic
-  const filteredRooms = MOCK_ROOMS.filter(room => {
-    if (activeType !== 'ALL' && room.type.toUpperCase() !== activeType) return false;
+  const fetchRooms = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      let data = [];
+      // If we have a full date range, use the search endpoint
+      if (startDate && endDate) {
+        const checkInStr = startDate.toISOString().split('T')[0];
+        const checkOutStr = endDate.toISOString().split('T')[0];
+        let url = `/rooms/search?checkIn=${checkInStr}&checkOut=${checkOutStr}`;
+        if (activeType !== 'ALL') {
+          url += `&type=${activeType}`;
+        }
+        data = await api.get(url, false);
+      } else {
+        // Otherwise get all available rooms
+        if (activeType === 'ALL') {
+          data = await api.get('/rooms/available', false);
+        } else {
+          data = await api.get(`/rooms/type/${activeType}`, false);
+          data = data.filter(r => r.available);
+        }
+      }
+      setRooms(data);
+    } catch (err) {
+      setError('Failed to load rooms. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate, activeType]);
+
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
+
+  // Client-side filtering for occupancy and price (since backend search doesn't natively filter these)
+  const filteredRooms = rooms.filter(room => {
     if (room.maxOccupancy < occupancy) return false;
-    if (room.price > priceMax) return false;
+    if (room.pricePerNight > priceMax) return false;
     return true;
   });
 

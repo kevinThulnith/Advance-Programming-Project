@@ -13,15 +13,44 @@ const LoginPage = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock login logic
-    if (formData.username === 'admin' && formData.password === 'admin123') {
-      navigate('/admin');
-    } else if (formData.username && formData.password) {
-      navigate('/my-reservations');
-    } else {
-      setError('Invalid username or password.');
+    if (!formData.username || !formData.password) {
+      setError('Please enter both username and password.');
+      return;
+    }
+
+    try {
+      const { api } = await import('../../api/client');
+      const response = await api.post('/auth/login', {
+        username: formData.username,
+        password: formData.password
+      }, false);
+
+      if (response && response.token) {
+        // Build user object that matches what Navbar expects + new token
+        const user = {
+          username: response.username,
+          fullName: response.fullName,
+          role: response.roles?.includes('ROLE_ADMIN') ? 'admin' : 'user',
+          token: response.token
+        };
+        
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Dispatch custom event to let other tabs/components know auth state changed instantly
+        window.dispatchEvent(new Event('storage'));
+        
+        if (user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/my-reservations');
+        }
+      } else {
+        setError('Invalid response from server.');
+      }
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
     }
   };
 
