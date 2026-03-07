@@ -23,7 +23,7 @@ const RoomDetailPage = () => {
         setLoading(true);
         const data = await api.get(`/rooms/${id}`, false);
         setRoom(data);
-      } catch (err) {
+      } catch {
         setError('Failed to load room details.');
       } finally {
         setLoading(false);

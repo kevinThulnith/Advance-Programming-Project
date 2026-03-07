@@ -10,12 +10,21 @@ const NewReservationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1);
-  const [dateRange, setDateRange] = useState([null, null]);
+  const initialRoomId = searchParams.get("roomId");
+  const initialCheckIn = searchParams.get("checkIn");
+  const initialCheckOut = searchParams.get("checkOut");
+
+  const [step, setStep] = useState(initialCheckIn && initialCheckOut ? 2 : 1);
+  const [dateRange, setDateRange] = useState(() => {
+    if (initialCheckIn && initialCheckOut) {
+      return [new Date(initialCheckIn), new Date(initialCheckOut)];
+    }
+    return [null, null];
+  });
   const [startDate, endDate] = dateRange;
 
   const [room, setRoom] = useState(null);
-  const [roomLoading, setRoomLoading] = useState(true);
+  const [roomLoading, setRoomLoading] = useState(!!initialRoomId);
   const [submitError, setSubmitError] = useState("");
 
   const [guestDetails, setGuestDetails] = useState({
@@ -26,25 +35,14 @@ const NewReservationPage = () => {
   });
 
   useEffect(() => {
-    const roomId = searchParams.get("roomId");
-    const checkIn = searchParams.get("checkIn");
-    const checkOut = searchParams.get("checkOut");
-
-    if (roomId) {
+    if (initialRoomId) {
       api
-        .get(`/rooms/${roomId}`, false)
+        .get(`/rooms/${initialRoomId}`, false)
         .then((data) => setRoom(data))
         .catch(() => {})
         .finally(() => setRoomLoading(false));
-    } else {
-      setRoomLoading(false);
     }
-
-    if (checkIn && checkOut) {
-      setDateRange([new Date(checkIn), new Date(checkOut)]);
-      setStep(2);
-    }
-  }, [searchParams]);
+  }, [initialRoomId]);
 
   const nightsCount =
     startDate && endDate
