@@ -1,37 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+const readUserFromStorage = () => {
+  try {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(readUserFromStorage);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
   const isHomePage = location.pathname === '/';
 
-  // Read auth state from localStorage
-  const readUser = () => {
-    try {
-      const stored = localStorage.getItem('user');
-      setUser(stored ? JSON.parse(stored) : null);
-    } catch {
-      setUser(null);
-    }
-  };
-
   useEffect(() => {
-    readUser();
     // Re-read when storage changes (e.g. login / logout in same or other tab)
-    window.addEventListener('storage', readUser);
-    return () => window.removeEventListener('storage', readUser);
+    const handleStorage = () => setUser(readUserFromStorage());
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
-
-  // Re-read when the route changes (handles same-tab login)
-  useEffect(() => {
-    readUser();
-  }, [location.pathname]);
 
   const handleSignOut = () => {
     localStorage.removeItem('user');

@@ -250,7 +250,6 @@ const ManageReservationsPage = () => {
   const [selectedRes, setSelectedRes] = useState(null);
 
   const fetchReservations = useCallback(() => {
-    setLoading(true);
     api
       .get("/reservations")
       .then((data) => setReservations(data))

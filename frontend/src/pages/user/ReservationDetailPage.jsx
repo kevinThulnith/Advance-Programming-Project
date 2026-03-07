@@ -24,7 +24,7 @@ const MOCK_BILL = {
 };
 
 const ReservationDetailPage = () => {
-  const { id } = useParams();
+  const { id: _id } = useParams();
 
   const handlePrint = () => {
     window.print();

@@ -192,7 +192,19 @@ const RoomsPage = () => {
 
       {/* Results Grid */}
       <section className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-8 py-16">
-        {filteredRooms.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-12 h-12 border-4 border-[var(--color-accent-gold)] border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-500">Loading rooms...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+            <p className="text-red-500 text-lg mb-4">{error}</p>
+            <Button variant="ghost" onClick={fetchRooms}>
+              Try Again
+            </Button>
+          </div>
+        ) : filteredRooms.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
             <div className="w-24 h-24 mb-6 text-gray-300">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
